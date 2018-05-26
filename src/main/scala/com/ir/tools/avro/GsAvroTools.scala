@@ -7,6 +7,7 @@ import com.google.cloud.ReadChannel
 import com.google.cloud.storage.{BlobId, StorageOptions}
 import org.apache.avro.file.DataFileStream
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
+import org.apache.avro.io.DecoderFactory
 import org.codehaus.jackson.map.ObjectMapper
 import org.rogach.scallop.{ScallopConf, Subcommand}
 
@@ -34,11 +35,15 @@ object GsAvroTools extends App {
   try {
     if (conf.subcommand contains conf.tojson) {
       dfs.iterator().asScala.take(conf.tojson.number()).foreach { r =>
-        if (conf.tojson.pretty()) {
-          val obj = mapper.readValue(r.toString, classOf[AnyRef])
-          println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj))
+        if(r.getSchema.getName == "Envelope") {
+
         } else {
-          println(r)
+          if (conf.tojson.pretty()) {
+            val obj = mapper.readValue(r.toString, classOf[AnyRef])
+            println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj))
+          } else {
+            println(r)
+          }
         }
       }
     } else if (conf.subcommand contains conf.getschema) {
