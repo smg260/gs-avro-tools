@@ -13,5 +13,5 @@ elif [ "$1" == "update" ]; then #update before first use
   mkdir -p $LOCAL_REPO
   gsutil -m rsync -x ".*sources.*|.*pom|.*md5|.*sha1|.*xml" -r $REMOTE_REPO $LOCAL_REPO
 else
-  java -jar $JAR --localrepo $LOCAL_REPO "$@"
+  java -jar $JAR --localrepo $LOCAL_REPO "$@" 2> /dev/null
 fi
