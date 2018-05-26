@@ -1,6 +1,6 @@
 name := "gs-avro-tools"
 
-version := "0.11"
+version := "0.2"
 
 scalaVersion := "2.12.6"
 
