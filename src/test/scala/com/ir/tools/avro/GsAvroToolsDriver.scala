@@ -3,9 +3,10 @@ package com.ir.tools.avro
 object GsAvroToolsDriver extends App {
    GsAvroTools.main(
       Array(
-         "--localrepo", "/Users/miralgadani/bin/jars/commons"
+         "--localrepo", "/Users/miralgadani/bin/gs-avro-tools-schemas"
          ,"tojson"
-         ,"--avro","gs://fq-logs/merged/firewall_prebid/2018/05/23/15/part-r-7832b62c-03ad-4532-a2e3-9b82335f5f84-00072.avro"
+         ,"--avro","gs://fq-logs/raw/2018/03/02/23/tracking-api-pixel-us-east4-a-999-0-2018-03-02T23-00Z.avro"
+         , "-x"
       )
    )
 }

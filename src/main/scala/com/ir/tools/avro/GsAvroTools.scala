@@ -40,7 +40,6 @@ object GsAvroTools extends App {
   }
 
   var embeddedDecoder: BinaryDecoder = null
-  val embeddedReader = new GenericDatumReader[GenericRecord]()
 
   val mapper = new ObjectMapper()
 
@@ -54,10 +53,8 @@ object GsAvroTools extends App {
 
           //reuse the decoder, and reader
           embeddedDecoder = DecoderFactory.get().binaryDecoder(r.get("body").asInstanceOf[ByteBuffer].array(), embeddedDecoder)
-          embeddedReader.setSchema(schema)
 
-
-          (Some(s"$msgType - v$schemaVersion"), embeddedReader.read(null, embeddedDecoder))
+          (Some(s"$msgType - v$schemaVersion"), new GenericDatumReader[GenericRecord](schema).read(null, embeddedDecoder))
         } else {
           (None, r)
         }
