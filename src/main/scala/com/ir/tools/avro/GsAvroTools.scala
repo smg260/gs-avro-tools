@@ -88,21 +88,23 @@ object GsAvroTools extends App {
     BlobId.of(bucket, rel)
   }
 
-  private def upperToCamel(s: String): String = {
-    var lastCharWasUnderscore = true
-    s.flatMap { c =>
-      if (c == '_') {
-        lastCharWasUnderscore = true
-        Iterator.empty
-      } else {
-        if (!lastCharWasUnderscore) {
-          Iterator(c.toLower)
+  private def upperToCamel(s: String): String = s match {
+    case "WEB_RTC" => "WebRTC"
+    case _ =>
+      var lastCharWasUnderscore = true
+      s.flatMap { c =>
+        if (c == '_') {
+          lastCharWasUnderscore = true
+          Iterator.empty
         } else {
-          lastCharWasUnderscore = false
-          Iterator(c)
+          if (!lastCharWasUnderscore) {
+            Iterator(c.toLower)
+          } else {
+            lastCharWasUnderscore = false
+            Iterator(c)
+          }
         }
       }
-    }
   }
 }
 
