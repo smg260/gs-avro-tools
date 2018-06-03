@@ -2,16 +2,26 @@
 
 #ensure this is the directory you extracted to
 GS_UTIL_AVRO_DIR=~/bin
+
+
+LIB_DIR="$GS_UTIL_AVRO_DIR/gs-avro-tools-lib"
 LOCAL_REPO="$GS_UTIL_AVRO_DIR/gs-avro-tools-schemas"
+
 REMOTE_REPO="gs://fq-platform/artifacts/releases/fq/platform/data-common"
+REMOTE_RELEASES="gs://miral/tools/avro/releases"
 
+JAR_FILE=gs-avro-tools-assembly-latest.jar
+JAR_PATH="$LIB_DIR/$JAR_FILE"
 
-JAR="$GS_UTIL_AVRO_DIR/gs-avro-tools-lib/gs-avro-tools-assembly-0.2.jar"
 if [ "$1" == "--help" ] || [ "$1" == "-h" ]; then
-  java -jar $JAR -h
+  java -jar $JAR_PATH -h
 elif [ "$1" == "update" ]; then #update before first use
   mkdir -p $LOCAL_REPO
   gsutil -m rsync -x ".*sources.*|.*pom|.*md5|.*sha1|.*xml" -r $REMOTE_REPO $LOCAL_REPO
+elif [ "$1" == "upgrade" ]; then #copy latest jar from remote
+  echo "copying latest jar from gcs"
+  gsutil cp "$REMOTE_RELEASES/$JAR_FILE" ${JAR_PATH}
+  echo "done"
 else
-  java -jar $JAR --localrepo $LOCAL_REPO "$@" 2> /dev/null
+  java -jar ${JAR_PATH} --localrepo ${LOCAL_REPO} "$@" 2> /dev/null
 fi

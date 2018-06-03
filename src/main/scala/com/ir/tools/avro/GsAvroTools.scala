@@ -6,6 +6,7 @@ import java.nio.file.Paths
 
 import com.google.cloud.ReadChannel
 import com.google.cloud.storage.{BlobId, StorageOptions}
+import com.ir.tools.avro.config.PrintConfig
 import org.apache.avro.file.DataFileStream
 import org.apache.avro.generic.GenericData.EnumSymbol
 import org.apache.avro.generic.{GenericDatumReader, GenericRecord}
@@ -33,10 +34,11 @@ object GsAvroTools extends App {
   val inputStream = Channels.newInputStream(channel)
   val dfs = new DataFileStream[GenericRecord](inputStream, new GenericDatumReader[GenericRecord]())
 
+
   val isEnvelope = dfs.getSchema.getName == "Envelope"
 
-  if (isEnvelope) {
-    println("** Displaying unwrapped envelopes **")
+  if(conf.tojson.raw()) {
+    PrintConfig(false)
   }
 
   var embeddedDecoder: BinaryDecoder = null
@@ -46,7 +48,7 @@ object GsAvroTools extends App {
   try {
     if (conf.subcommand contains conf.tojson) {
       dfs.iterator().asScala.take(conf.tojson.number()).foreach { r =>
-        val (extraInfo, record) = if (isEnvelope) {
+        val (extraInfo, record) = if (!conf.tojson.raw() && isEnvelope) {
           val msgType = upperToCamel(r.get("type").asInstanceOf[EnumSymbol].toString)
           val schemaVersion = r.get("schemaVersion").asInstanceOf[String]
           val schema = schemaRegistry.lookup(msgType, schemaVersion)
@@ -54,7 +56,7 @@ object GsAvroTools extends App {
           //reuse the decoder, and reader
           embeddedDecoder = DecoderFactory.get().binaryDecoder(r.get("body").asInstanceOf[ByteBuffer].array(), embeddedDecoder)
 
-          (Some(s"$msgType - v$schemaVersion"), new GenericDatumReader[GenericRecord](schema).read(null, embeddedDecoder))
+          (Some(s"Envelope|$msgType/v$schemaVersion"), new GenericDatumReader[GenericRecord](schema).read(null, embeddedDecoder))
         } else {
           (None, r)
         }
@@ -65,7 +67,7 @@ object GsAvroTools extends App {
           println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj))
           println()
         } else {
-          if(conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + " => ")
+          if(conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + " >> ")
           println(s"$record")
         }
       }
@@ -109,7 +111,7 @@ object GsAvroTools extends App {
 }
 
 class Configuration(args: Seq[String]) extends ScallopConf(args) {
-  version("GS Avro Tools v0.2")
+  version("GS Avro Tools v0.3")
 
   val localrepo = opt[String](required = true, name = "localrepo", descr = "Base directory containing commons schemas. Required for Envelope deserialisation")
 
@@ -118,11 +120,15 @@ class Configuration(args: Seq[String]) extends ScallopConf(args) {
     val pretty = opt[Boolean](descr = "Pretty print the output")
     val number = opt[Int](default = Some(5), descr = "Number of records to show. Default: 5")
     val x = opt[Boolean](descr = "Show extended information")
+    val raw = opt[Boolean](descr = "Print avro as is. Binary data will look weird.")
+
+    mutuallyExclusive(x, raw)
   }
 
   val getschema = new Subcommand("getschema") {
     val avro = opt[String](required = true, descr = "Location of avro file locally or in google storage (gs://)")
   }
+
   addSubcommand(tojson)
   addSubcommand(getschema)
 
