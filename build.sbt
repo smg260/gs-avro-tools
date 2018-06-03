@@ -17,3 +17,16 @@ assemblyMergeStrategy in assembly := {
     val oldStrategy = (assemblyMergeStrategy in assembly).value
     oldStrategy(x)
 }
+
+
+lazy val upload = taskKey[Unit]("Upload to gcs")
+
+import scala.sys.process.stringToProcess
+
+upload := {
+  val upload = s"gsutil cp target/scala-2.12/gs-avro-tools-assembly-${version.value}.jar gs://miral/tools/avro/releases"
+  val rename = s"gsutil cp target/scala-2.12/gs-avro-tools-assembly-${version.value}.jar gs://miral/tools/avro/releases/gs-avro-tools-assembly-latest.jar"
+
+  stringToProcess(upload).!
+  stringToProcess(rename).!
+}
