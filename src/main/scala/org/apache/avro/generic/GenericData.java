@@ -625,6 +625,9 @@ public class GenericData {
      * Renders a Java datum as <a href="http://www.json.org/">JSON</a>.
      */
     protected void toString(Object datum, StringBuilder buffer, IdentityHashMap<Object, Object> seenObjects, String fieldName) {
+
+        boolean useConverter = PrintConfig.instance().useConverters() && PrintConverters.hasConverter(datum, fieldName);
+
         if (isRecord(datum)) {
             if (seenObjects.containsKey(datum)) {
                 buffer.append(TOSTRING_CIRCULAR_REFERENCE_ERROR_TEXT);
@@ -684,7 +687,7 @@ public class GenericData {
             writeEscapedString(datum.toString(), buffer);
             buffer.append("\"");
         } else if (isBytes(datum)) {
-            if(PrintConfig.instance().useConverters()) {
+            if(useConverter) {
                 buffer.append('"');
                 buffer.append(PrintConverters.convert(datum, fieldName));
                 buffer.append('"');
@@ -709,16 +712,14 @@ public class GenericData {
             seenObjects.put(datum, datum);
             toString(datum, buffer, seenObjects, null);
             seenObjects.remove(datum);
-        } else if (datum instanceof GenericData.Fixed) { //datum instanceof GenericData.Fixed
-            if(PrintConfig.instance().useConverters()) {
+        } else {
+            if(useConverter) {
                 buffer.append('"');
                 buffer.append(PrintConverters.convert(datum, fieldName));
                 buffer.append('"');
             } else {
                 buffer.append(datum);
             }
-        } else {
-            buffer.append(datum);
         }
     }
 

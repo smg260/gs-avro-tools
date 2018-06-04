@@ -2,6 +2,7 @@ package com.ir.tools.avro.config
 
 import java.net.InetAddress
 import java.nio.ByteBuffer
+import java.time.Instant
 
 import org.apache.avro.generic.GenericData
 import org.apache.commons.codec.binary.Hex
@@ -10,16 +11,24 @@ import scala.util.{Failure, Success, Try}
 
 object PrintConverters {
 
-  def overrides = Map()
+  /**
+    * Callers should call `hasConverter` first otherwise may encounter a match error
+    * @param obj
+    * @param name
+    * @return
+    */
+  def convert(obj: Any, name: String): String = (obj, name) match {
+    case (o: GenericData.Fixed, _) => FixedTypeConverter.convert(o)
+    case (o: ByteBuffer, "ipAddress" | "publicIps" | "localIps") => IpAddressConverter.convert(o)
+    case (o: ByteBuffer, _) => ByteBufferConverter.convert(o)
+    case (o: Long, "timestampMs") => TimestampConverter.convert(o)
+  }
 
-  def convert(obj: Any, name: String): String = obj match {
-    case o: GenericData.Fixed =>
-      FixedTypeConverter.convert(o)
-    case o: ByteBuffer =>
-      name match {
-        case "ipAddress" | "publicIps" | "localIps" => IpAddressConverter.convert(o)
-        case _ => ByteBufferConverter.convert(o)
-      }
+  def hasConverter(obj: Any, name: String): Boolean = (obj, name) match {
+    case (_: GenericData.Fixed, _) => true
+    case (_: ByteBuffer, _) => true
+    case (_: Long, "timestampMs") => true
+    case _ => false
   }
 }
 
@@ -63,4 +72,8 @@ object IpAddressConverter extends AvroTypeConverter[ByteBuffer] {
       case Success(address) => address
       case Failure(ex) => ex.getMessage
     }
+}
+
+object TimestampConverter extends AvroTypeConverter[Long] {
+  override def convert(obj: Long): String = Instant.ofEpochMilli(obj).toString
 }
