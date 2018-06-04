@@ -20,13 +20,24 @@ assemblyMergeStrategy in assembly := {
 
 
 lazy val upload = taskKey[Unit]("Upload to gcs")
+lazy val updateLocal = taskKey[Unit]("Copy script and jar to ~/bin")
 
 import scala.sys.process.stringToProcess
 
 upload := {
+  val uploadScript = "gsutil cp gs-avro-tools gs://miral/tools/avro/gs-avro-tools"
   val upload = s"gsutil cp target/scala-2.12/gs-avro-tools-assembly-${version.value}.jar gs://miral/tools/avro/releases"
   val rename = s"gsutil cp target/scala-2.12/gs-avro-tools-assembly-${version.value}.jar gs://miral/tools/avro/releases/gs-avro-tools-assembly-latest.jar"
 
+  stringToProcess(uploadScript).!
   stringToProcess(upload).!
   stringToProcess(rename).!
+}
+
+updateLocal := {
+  val copyScript = "cp gs-avro-tools /Users/miralgadani/bin/"
+  val copyJar = s"cp target/scala-2.12/gs-avro-tools-assembly-${version.value}.jar /Users/miralgadani/bin/gs-avro-tools-lib/gs-avro-tools-assembly-latest.jar"
+
+  stringToProcess(copyScript).!
+  stringToProcess(copyJar).!
 }

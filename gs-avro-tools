@@ -33,5 +33,5 @@ elif [ "$1" == "install" ]; then
   get_latest_jar
   update_repo
 else
-  java -jar ${JAR_PATH} --localrepo ${LOCAL_SCHEMA_REPO} "$@" 2> /dev/null
+  java -jar ${JAR_PATH} --localrepo ${LOCAL_SCHEMA_REPO} "$@"
 fi

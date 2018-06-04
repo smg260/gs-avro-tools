@@ -37,8 +37,8 @@ object GsAvroTools extends App {
 
   val isEnvelope = dfs.getSchema.getName == "Envelope"
 
-  if(conf.tojson.raw()) {
-    PrintConfig(false)
+  if(conf.tojson.human()) {
+    PrintConfig(true)
   }
 
   var embeddedDecoder: BinaryDecoder = null
@@ -48,7 +48,7 @@ object GsAvroTools extends App {
   try {
     if (conf.subcommand contains conf.tojson) {
       dfs.iterator().asScala.take(conf.tojson.number()).foreach { r =>
-        val (extraInfo, record) = if (!conf.tojson.raw() && isEnvelope) {
+        val (extraInfo, record) = if (isEnvelope && !conf.tojson.nounwrap()) {
           val msgType = upperToCamel(r.get("type").asInstanceOf[EnumSymbol].toString)
           val schemaVersion = r.get("schemaVersion").asInstanceOf[String]
           val schema = schemaRegistry.lookup(msgType, schemaVersion)
@@ -119,10 +119,13 @@ class Configuration(args: Seq[String]) extends ScallopConf(args) {
     val avro = opt[String](required = true, descr = "Location of avro file locally or in google storage (gs://)")
     val pretty = opt[Boolean](descr = "Pretty print the output")
     val number = opt[Int](default = Some(5), descr = "Number of records to show. Default: 5")
-    val x = opt[Boolean](descr = "Show extended information")
-    val raw = opt[Boolean](descr = "Print avro as is. Binary data will look weird.")
+    val human = opt[Boolean](descr = "(BETA) Attempt to make data such as timestamps and ips human readable.")
 
-    mutuallyExclusive(x, raw)
+    //unlikely that these will be used much
+    val nounwrap = opt[Boolean](descr = "[Envelopes only] Will not unwrap body")
+    val x = opt[Boolean](descr = "[Envelopes only] If unwrapping, show message type and version")
+
+    mutuallyExclusive(nounwrap, x)
   }
 
   val getschema = new Subcommand("getschema") {
