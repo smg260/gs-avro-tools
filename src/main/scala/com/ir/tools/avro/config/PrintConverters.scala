@@ -21,13 +21,14 @@ object PrintConverters {
     case (o: GenericData.Fixed, _) => FixedTypeConverter.convert(o)
     case (o: ByteBuffer, "ipAddress" | "publicIps" | "localIps") => IpAddressConverter.convert(o)
     case (o: ByteBuffer, _) => ByteBufferConverter.convert(o)
-    case (o: Long, "timestampMs") => TimestampConverter.convert(o)
+    case (o: Long, "timestampMs") => TimestampMillisConverter.convert(o)
+    case (o: Long, "timestampMicros") => TimestampMicrosConverter.convert(o)
   }
 
   def hasConverter(obj: Any, name: String): Boolean = (obj, name) match {
     case (_: GenericData.Fixed, _) => true
     case (_: ByteBuffer, _) => true
-    case (_: Long, "timestampMs") => true
+    case (_: Long, "timestampMs" | "timestampMicros") => true
     case _ => false
   }
 }
@@ -74,6 +75,11 @@ object IpAddressConverter extends AvroTypeConverter[ByteBuffer] {
     }
 }
 
-object TimestampConverter extends AvroTypeConverter[Long] {
-  override def convert(obj: Long): String = Instant.ofEpochMilli(obj).toString
+object TimestampMillisConverter extends AvroTypeConverter[Long] {
+  def convert(obj: Long): String = Instant.ofEpochMilli(obj).toString
+}
+
+
+object TimestampMicrosConverter extends AvroTypeConverter[Long] {
+  def convert(obj: Long): String = Instant.ofEpochMilli(obj/1000).toString
 }

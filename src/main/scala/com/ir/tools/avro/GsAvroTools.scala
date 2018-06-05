@@ -38,10 +38,11 @@ object GsAvroTools extends App {
   val isEnvelope = dfs.getSchema.getName == "Envelope"
 
   if(conf.tojson.human()) {
+    //singleton config that GenericData.toString looks up
     PrintConfig(true)
   }
 
-  var embeddedDecoder: BinaryDecoder = null
+  var embeddedDecoder: BinaryDecoder = _
 
   val mapper = new ObjectMapper()
 
@@ -56,7 +57,7 @@ object GsAvroTools extends App {
           //reuse the decoder, and reader
           embeddedDecoder = DecoderFactory.get().binaryDecoder(r.get("body").asInstanceOf[ByteBuffer].array(), embeddedDecoder)
 
-          (Some(s"Envelope|$msgType/v$schemaVersion"), new GenericDatumReader[GenericRecord](schema).read(null, embeddedDecoder))
+          (Some(s"$msgType/v$schemaVersion"), new GenericDatumReader[GenericRecord](schema).read(null, embeddedDecoder))
         } else {
           (None, r)
         }
@@ -67,7 +68,7 @@ object GsAvroTools extends App {
           println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj))
           println()
         } else {
-          if(conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + " >> ")
+          if(conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + "\t->  ")
           println(s"$record")
         }
       }
