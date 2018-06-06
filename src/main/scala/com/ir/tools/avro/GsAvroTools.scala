@@ -37,7 +37,7 @@ object GsAvroTools extends App {
 
   val isEnvelope = dfs.getSchema.getName == "Envelope"
 
-  if(conf.tojson.human()) {
+  if (conf.tojson.human()) {
     //singleton config that GenericData.toString looks up
     PrintConfig(true)
   }
@@ -47,8 +47,18 @@ object GsAvroTools extends App {
   val mapper = new ObjectMapper()
 
   try {
-    if (conf.subcommand contains conf.tojson) {
-      dfs.iterator().asScala.take(conf.tojson.number()).foreach { r =>
+    if (conf.subcommand contains conf.count) {
+      var count = 0L
+      while(dfs.hasNext()) {
+        dfs.nextBlock()
+        count += dfs.getBlockCount
+      }
+      println(count)
+    } else if (conf.subcommand contains conf.tojson) {
+      val asScala = dfs.iterator().asScala
+      val iterator = if (conf.tojson.number() > 0) asScala.take(conf.tojson.number()) else asScala
+
+      iterator.foreach { r =>
         val (extraInfo, record) = if (isEnvelope && !conf.tojson.nounwrap()) {
           val msgType = upperToCamel(r.get("type").asInstanceOf[EnumSymbol].toString)
           val schemaVersion = r.get("schemaVersion").asInstanceOf[String]
@@ -64,11 +74,11 @@ object GsAvroTools extends App {
 
         if (conf.tojson.pretty()) {
           val obj = mapper.readValue(record.toString, classOf[AnyRef])
-          if(conf.tojson.x() && extraInfo.isDefined) println(extraInfo.get)
+          if (conf.tojson.x() && extraInfo.isDefined) println(extraInfo.get)
           println(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(obj))
           println()
         } else {
-          if(conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + "\t->  ")
+          if (conf.tojson.x() && extraInfo.isDefined) print(extraInfo.get + "\t->  ")
           println(s"$record")
         }
       }
@@ -119,7 +129,7 @@ class Configuration(args: Seq[String]) extends ScallopConf(args) {
   val tojson = new Subcommand("tojson") {
     val avro = opt[String](required = true, descr = "Location of avro file locally or in google storage (gs://)")
     val pretty = opt[Boolean](descr = "Pretty print the output")
-    val number = opt[Int](default = Some(5), descr = "Number of records to show. Default: 5")
+    val number = opt[Int](default = Some(5), descr = "Default: 5. Number of records to show. < 0 will exhaust the stream")
     val human = opt[Boolean](descr = "(BETA) Attempt to make data such as timestamps and ips human readable.")
 
     //unlikely that these will be used much
@@ -129,10 +139,15 @@ class Configuration(args: Seq[String]) extends ScallopConf(args) {
     mutuallyExclusive(nounwrap, x)
   }
 
+  val count = new Subcommand("count") {
+    val avro = opt[String](required = true, descr = "Location of avro file locally or in google storage (gs://)")
+  }
+
   val getschema = new Subcommand("getschema") {
     val avro = opt[String](required = true, descr = "Location of avro file locally or in google storage (gs://)")
   }
 
+  addSubcommand(count)
   addSubcommand(tojson)
   addSubcommand(getschema)
 
