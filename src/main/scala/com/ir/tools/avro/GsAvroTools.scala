@@ -48,12 +48,7 @@ object GsAvroTools extends App {
 
   try {
     if (conf.subcommand contains conf.count) {
-      var count = 0L
-      while(dfs.hasNext()) {
-        dfs.nextBlock()
-        count += dfs.getBlockCount
-      }
-      println(count)
+      println(dfs.iterator().asScala.size)
     } else if (conf.subcommand contains conf.tojson) {
       val asScala = dfs.iterator().asScala
       val iterator = if (conf.tojson.number() > 0) asScala.take(conf.tojson.number()) else asScala
