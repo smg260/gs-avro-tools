@@ -5,9 +5,10 @@ object GsAvroToolsDriver extends App {
       Array(
          "--localrepo", "/Users/miralgadani/bin/gs-avro-tools-schemas"
          ,"tojson"
-         ,"--avro","gs://fq-logs/merged/pixel/2018/05/30/13/part-r-7bbf93b7-4ac4-479c-8853-85402b62eb24-00071.avro"
+         ,"--avro","gs://fq-logs-merged/pixel/2019/06/07/15/part-r-132669_0dccc86b-517b-4ae2-a615-1c93407788ac-00213.avro"
          , "--human"
          , "-x"
+         , "--pretty"
       )
    )
 }

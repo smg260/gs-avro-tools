@@ -2,8 +2,10 @@ package com.ir.tools.avro.config
 
 import java.net.InetAddress
 import java.nio.ByteBuffer
-import java.time.Instant
+import java.time.{Instant, LocalDateTime, ZoneOffset}
 
+import com.google.common.base.Preconditions
+import com.google.common.primitives.Longs
 import org.apache.avro.generic.GenericData
 import org.apache.commons.codec.binary.Hex
 
@@ -18,6 +20,7 @@ object PrintConverters {
     * @return
     */
   def convert(obj: Any, name: String): String = (obj, name) match {
+    case (o: GenericData.Fixed, "sessionId") => SessionIdFixedTypeConverter.convert(o)
     case (o: GenericData.Fixed, _) => FixedTypeConverter.convert(o)
     case (o: ByteBuffer, "ipAddress" | "publicIps" | "localIps") => IpAddressConverter.convert(o)
     case (o: ByteBuffer, _) => ByteBufferConverter.convert(o)
@@ -53,11 +56,26 @@ trait AvroTypeConverter[T] {
   * }
   */
 
-//private val NUM_UUID_EPOCH_TO_EPOCH_100NS_BLOCKS: Long = 0x01b21dd213814000L
-//private val NUM_100NS_BLOCKS_IN_A_MS: Int = 10000
-//prints human readable timestamp which is encoded in the 8 most significant bits as 100NS blocks from UUID epoch
-//            ByteBuffer bb = ByteBuffer.wrap(bytes);
-//            buffer.append("timestamp: " + Instant.ofEpochMilli((bb.getLong() - NUM_UUID_EPOCH_TO_EPOCH_100NS_BLOCKS) / NUM_100NS_BLOCKS_IN_A_MS));
+
+object SessionIdFixedTypeConverter extends AvroTypeConverter[GenericData.Fixed] {
+  private val UUID_EPOCH_MS = LocalDateTime.of(1582, 10, 15, 0, 0).toInstant(ZoneOffset.UTC).toEpochMilli
+
+  private def extractTimeFromFqUUID(sessionId: Array[Byte]): Instant = {
+    Preconditions.checkNotNull(sessionId)
+    Preconditions.checkArgument(sessionId.length == 16)
+    //this is the number of 100NS blocks from the UUID Epoch
+    val uuidTimestamp = Longs.fromByteArray(sessionId)
+    val msFromUuidEpoch = uuidTimestamp / 10000
+    //offset to unix epoch
+    val epochMs = UUID_EPOCH_MS + msFromUuidEpoch
+    Instant.ofEpochMilli(epochMs)
+  }
+
+  def convert(obj: GenericData.Fixed): String = {
+    s"${FixedTypeConverter.convert(obj)} [${extractTimeFromFqUUID(obj.bytes())}]"
+  }
+}
+
 object FixedTypeConverter extends AvroTypeConverter[GenericData.Fixed] {
   def convert(obj: GenericData.Fixed): String = Hex.encodeHex(obj.bytes()).mkString
 }
