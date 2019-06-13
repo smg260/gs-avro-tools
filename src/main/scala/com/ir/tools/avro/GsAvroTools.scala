@@ -98,6 +98,7 @@ object GsAvroTools extends App {
 
   private def upperToCamel(s: String): String = s match {
     case "WEB_RTC" => "WebRTC"
+    case "IMPLEMENT_JS" => "ImplementJS"
     case _ =>
       var lastCharWasUnderscore = true
       s.flatMap { c =>
